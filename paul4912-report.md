@@ -11,30 +11,27 @@ Review Resources:
   - [Review Summary](#review-summary)
   - [Scope](#scope)
   - [Critical Findings](#critical-findings)
-    - [1. Critical - Risk of secret getting revealed if the input is zero](#1-critical---risk-of-secret-getting-revealed-if-the-input-is-zero)
   - [High Findings](#high-findings)
     - [1. High - Checking for collateral value limits is done even when decreasing debt shares](#1-high---checking-for-collateral-value-limits-is-done-even-when-decreasing-debt-shares)
       - [Technical Details](#technical-details)
       - [Impact](#impact)
       - [Recommendation](#recommendation)
   - [Medium Findings](#medium-findings)
-    - [1. Medium -](#1-medium--)
   - [Low Findings](#low-findings)
     - [1. Low - No public function for converting assets to shares for debt](#1-low---no-public-function-for-converting-assets-to-shares-for-debt)
       - [Technical Details](#technical-details-1)
       - [Impact](#impact-1)
       - [Recommendation](#recommendation-1)
   - [Informational Findings](#informational-findings)
-    - [1. Informational - Mismatch between specification and implementation for x value](#1-informational---mismatch-between-specification-and-implementation-for-x-value)
+    - [1. Informational - Redundant line](#1-informational---redundant-line)
       - [Technical Details](#technical-details-2)
       - [Impact](#impact-2)
       - [Recommendation](#recommendation-2)
   - [Gas Optimisation Findings](#gas-optimisation-findings)
-  - [Final remarks](#final-remarks)
 
 ## Review Summary
 
-asdasd
+Manual code review of contracts in scope trying to find flaws and potential improvements that are not picked up on last audit and automated tools. 
 
 ## Scope
 
@@ -52,7 +49,7 @@ src/utils/Swapper.sol
 
 ## Critical Findings
 
-### 1. Critical - Risk of secret getting revealed if the input is zero
+None.
 
 ## High Findings
 
@@ -77,8 +74,6 @@ This would mean we cannot repay or liquidate loans when the debt limit is decrea
 Remove the function call to check for the limit on _repay() and liquidate() functions
 
 ## Medium Findings
-
-### 1. Medium - 
 
 None
 
@@ -105,20 +100,21 @@ By doing this you can also make loans mapping private to save some gas.
 
 ## Informational Findings
 
-### 1. Informational - Mismatch between specification and implementation for x value
+### 1. Informational - Redundant line
 
-Mismatch between specification and implementation regarding the `x` message value.
+https://github.com/code-423n4/2024-03-revert-lend/blob/435b054f9ad2404173f36f0f74a5096c894b12b7/src/V3Vault.sol#L986
+This line is redundant since if assets is equal to 0 we have nothing to repay. 
 
 #### Technical Details
 
-In [58/RLN-V2](https://rfc.vac.dev/spec/58/#proof-generation), the specification states that `x` is the signal hashed. However, in the `rln.circom` circuit, `x` is the message without hash.
+Whether isShare is true or false due to the if statement in line 964, assets should always be > 0 or this function has no reason to be called.
 
 #### Impact
 Informational.
 
 #### Recommendation
 
-Update the implementation to hash the `x` value according to the specification.
+Just throw an error if assets == 0. Makes the code more verbose. Don't want to run rest of code if assets == 0 anyway.
 
 ## Gas Optimisation Findings
 
@@ -126,9 +122,6 @@ https://github.com/code-423n4/2024-03-revert-lend/blob/435b054f9ad2404173f36f0f7
 ```isTransformMode ? msg.sender : owner```
 If this is in transform mode we want to send to msg.sender. If not in transform mode the owner always has to be msg.sender otherwise transaction is unauthorized from line 561. So we always want to send to msg.sender regardless of transform mode. Line 595 can also be removed.
 
-https://github.com/code-423n4/2024-03-revert-lend/blob/435b054f9ad2404173f36f0f74a5096c894b12b7/src/V3Vault.sol#L986
-This line is redundant since if assets is equal to 0 we have nothing to repay can just throw an error. Whether isShare is true or false due to the if statement in line 964, assets should always be > 0 or this function has no reason to be called.
-
-
-## Final remarks
+https://github.com/Paul4912/2024-03-revert-lend/blob/9b3b6304b176d23ee007c18f56c91cd699bf5b78/src/automators/AutoExit.sol#L124
+This line can be removed since its covered by line 127. In the edge case params.liquidity and state.liquidity is both 0, Uniswap's nonfungibleposition manager will throw error anyway.
 
